@@ -96,12 +96,13 @@ func proxyHandler(c *gin.Context) {
 		u = "https://" + u
 	}
 	// Fix double-slash stripping by reverse proxies (e.g. nginx / uwsgi)
-	if strings.Contains(u[3:9], "://") {
+	if !strings.Contains(u[3:9], "://") {
 		u = strings.Replace(u, "s:/", "s://", 1)
 	}
 
 	// Check URL against patterns
 	if !matchURL(u) {
+
 		c.String(http.StatusForbidden, "Invalid input.")
 		return
 	}
