@@ -24,7 +24,6 @@ Re-implementation of [hunshcn/gh-proxy](https://github.com/hunshcn/gh-proxy) in 
 ## Demo
 
 ![Homepage](https://raw.githubusercontent.com/taurusxin/ghproxy-go/master/screenshots/homepage.png)
-*(Replace this link with your actual screenshot URL if you host it)*
 
 ## Usage
 
@@ -38,10 +37,10 @@ Prefix any GitHub URL with your proxy address:
 
 ```bash
 # Download Release
-wget https://ghproxy.com/https://github.com/user/repo/releases/download/v1.0.0/app.zip
+wget https://ghproxy.com/https://github.com/taurusxin/ghproxy-go/releases/download/v1.0.0/app.zip
 
 # Clone Repository
-git clone https://ghproxy.com/https://github.com/user/repo.git
+git clone https://ghproxy.com/https://github.com/taurusxin/ghproxy-go.git
 ```
 
 ## Deployment
