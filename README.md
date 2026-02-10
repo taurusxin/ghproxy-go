@@ -21,10 +21,6 @@ Re-implementation of [hunshcn/gh-proxy](https://github.com/hunshcn/gh-proxy) in 
   - `git clone` support (Smart HTTP protocol)
   - `gist.github.com` support
 
-## Demo
-
-![Homepage](https://raw.githubusercontent.com/taurusxin/ghproxy-go/master/screenshots/homepage.png)
-
 ## Usage
 
 ### Web Interface
