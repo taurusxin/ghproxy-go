@@ -1,0 +1,21 @@
+# Binaries
+ghproxy-go
+ghproxy-go.exe
+ghproxy-go.test
+*.test
+
+# GoReleaser
+dist/
+
+# IDEs
+.idea/
+.vscode/
+
+# OS specific
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Test artifacts
+test-clone/

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Proxy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #fafafa;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 620px;
+      width: 100%;
+    }
+
+    .header {
+      margin-bottom: 2.5rem;
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #111;
+    }
+
+    .header p {
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      font-size: 0.9rem;
+      font-family: inherit;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .input-row input:focus {
+      border-color: #111;
+    }
+
+    .input-row input::placeholder {
+      color: #aaa;
+    }
+
+    .input-row button {
+      padding: 0.7rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+
+    .input-row button:hover {
+      background: #333;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #999;
+      margin-bottom: 0.75rem;
+    }
+
+    .examples {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .example-item {
+      padding: 0.75rem 1rem;
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+
+    .example-item .label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #888;
+      margin-bottom: 0.25rem;
+    }
+
+    .example-item .url {
+      font-size: 0.8rem;
+      color: #444;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.78rem;
+      color: #bbb;
+    }
+
+    footer a {
+      color: #888;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: #111;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 1.5rem; }
+      .header h1 { font-size: 1.4rem; }
+      .input-row { flex-direction: column; }
+      .input-row button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>GitHub Proxy</h1>
+      <p>GitHub 文件加速下载</p>
+    </div>
+
+    <form class="input-row" onsubmit="go(event)">
+      <input id="url" type="text" placeholder="粘贴 GitHub 文件链接" autofocus>
+      <button type="submit">下载</button>
+    </form>
+
+    <div class="section-title">支持的链接格式</div>
+    <div class="examples">
+      <div class="example-item">
+        <span class="label">Git Clone</span>
+        <span class="url">git clone https://your-proxy-domain/https://github.com/user/repo.git</span>
+      </div>
+      <div class="example-item">
+        <span class="label">Release 文件</span>
+        <span class="url">https://github.com/user/repo/releases/download/v1.0/file.zip</span>
+      </div>
+      <div class="example-item">
+        <span class="label">分支源码</span>
+        <span class="url">https://github.com/user/repo/archive/master.zip</span>
+      </div>
+      <div class="example-item">
+        <span class="label">仓库文件</span>
+        <span class="url">https://github.com/user/repo/blob/master/README.md</span>
+      </div>
+      <div class="example-item">
+        <span class="label">Raw 文件</span>
+        <span class="url">https://raw.githubusercontent.com/user/repo/master/file</span>
+      </div>
+    </div>
+
+    <footer>
+      Powered by <a href="https://github.com/taurusxin/ghproxy-go">ghproxy-go</a>
+    </footer>
+  </div>
+  <script>
+    function go(e) {
+      e.preventDefault();
+      var v = document.getElementById("url").value.trim();
+      if (v) window.location.href = "/" + v;
+    }
+  </script>
+</body>
+</html>
