@@ -9,6 +9,8 @@ High-performance GitHub Reverse Proxy service written in Go. Supports file accel
 
 Re-implementation of [hunshcn/gh-proxy](https://github.com/hunshcn/gh-proxy) in Go with a modernized UI and improved performance.
 
+![ghproxy-go](./assets/ghproxy-go.png)
+
 ## Features
 
 - **🚀 High Performance**: Built with Go + Gin, supports streaming transfer for large files.
