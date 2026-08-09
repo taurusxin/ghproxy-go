@@ -202,16 +202,14 @@ func doProxy(c *gin.Context, targetURL string, allowRedirects bool) {
 		return
 	}
 
-	// Handle redirect responses: rewrite Location if it points to GitHub
+	// Follow redirect responses internally so the client receives the final
+	// content directly. This keeps the proxy in the path (important when the
+	// client cannot reach GitHub's CDN on its own) and resolves redirect chains
+	// such as /releases/latest/download/... -> /releases/download/<ver>/... -> CDN
+	// without bouncing a 302 back to the client.
 	if location := resp.Header.Get("Location"); location != "" {
-		if matchURL(location) {
-			// Rewrite to go through our proxy
-			resp.Header.Set("Location", "/"+location)
-		} else {
-			// Follow the redirect internally
-			doProxy(c, location, true)
-			return
-		}
+		doProxy(c, location, true)
+		return
 	}
 
 	// Copy response headers

@@ -1,6 +1,13 @@
 package main
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+)
 
 func TestIsFullGitHubURL(t *testing.T) {
 	cases := map[string]bool{
@@ -86,5 +93,74 @@ func TestResolveTarget(t *testing.T) {
 		if c.wantOK && gotURL != c.wantURL {
 			t.Errorf("resolveTarget(path=%q, q=%q): url=%q, want %q", c.path, c.query, gotURL, c.wantURL)
 		}
+	}
+}
+
+// newProxyTestContext builds a gin context backed by a response recorder, with a
+// GET request suitable for driving doProxy directly in tests.
+func newProxyTestContext() (*gin.Context, *httptest.ResponseRecorder) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+	return c, w
+}
+
+// TestDoProxyFollowsRedirectChain verifies that doProxy follows a redirect chain
+// internally and streams the final response body to the client.
+func TestDoProxyFollowsRedirectChain(t *testing.T) {
+	const body = "FILE_CONTENT"
+	final := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(body))
+	}))
+	defer final.Close()
+
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, final.URL, http.StatusFound)
+	}))
+	defer origin.Close()
+
+	c, w := newProxyTestContext()
+	doProxy(c, origin.URL, false)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != body {
+		t.Errorf("body = %q, want %q", w.Body.String(), body)
+	}
+}
+
+// TestDoProxyFollowsGitHubPatternRedirect is the regression test for the
+// "releases/latest" bug. The redirect target matches the proxy's GitHub URL
+// patterns; previously such a Location was rewritten and a 302 was returned to
+// the client. It must now be followed internally so the client gets the file.
+func TestDoProxyFollowsGitHubPatternRedirect(t *testing.T) {
+	const body = "LATEST_FILE"
+	final := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(body))
+	}))
+	defer final.Close()
+
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, final.URL, http.StatusFound)
+	}))
+	defer origin.Close()
+
+	// Make the redirect target look like a GitHub URL so it matches the proxy
+	// patterns (matchURL == true). The proxy must still follow it internally.
+	origExps := exps
+	exps = []*regexp.Regexp{regexp.MustCompile("^" + regexp.QuoteMeta(final.URL))}
+	defer func() { exps = origExps }()
+
+	c, w := newProxyTestContext()
+	doProxy(c, origin.URL, false)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d (should follow redirect internally, not return 302)", w.Code, http.StatusOK)
+	}
+	if w.Body.String() != body {
+		t.Errorf("body = %q, want %q", w.Body.String(), body)
 	}
 }
