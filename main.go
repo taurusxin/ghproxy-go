@@ -41,6 +41,15 @@ var (
 	exp5 = regexp.MustCompile(`^(?:https?://)?gist\.(?:githubusercontent|github)\.com/.+?/.+?/.+$`)
 
 	exps = []*regexp.Regexp{exp1, exp2, exp3, exp4, exp5}
+
+	// githubHosts are the upstream hosts recognised in full-form proxy URLs.
+	githubHosts = []string{
+		"github.com/",
+		"raw.githubusercontent.com/",
+		"raw.github.com/",
+		"gist.githubusercontent.com/",
+		"gist.github.com/",
+	}
 )
 
 // ======================== Main ========================
@@ -81,30 +90,61 @@ func indexHandler(c *gin.Context) {
 }
 
 func proxyHandler(c *gin.Context) {
-	rawPath := c.Request.URL.Path
-	if len(rawPath) < 2 {
-		c.Header("Content-Type", "text/html; charset=utf-8")
-		c.String(http.StatusOK, indexHTML)
+	fullURL, ok := resolveTarget(c.Request.URL.Path, c.Request.URL.RawQuery)
+	if !ok {
+		if len(c.Request.URL.Path) < 2 {
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.String(http.StatusOK, indexHTML)
+			return
+		}
+		c.String(http.StatusForbidden, "Invalid input.")
 		return
+	}
+	doProxy(c, fullURL, false)
+}
+
+// resolveTarget converts an incoming proxy path into the upstream GitHub URL to
+// fetch. It returns ok=false for the index page (empty path) or for requests
+// that do not match an allowed pattern.
+//
+// Two URL forms are supported:
+//
+//	full form:  https://example.com/https://github.com/user/repo   (any GitHub resource)
+//	short form: https://example.com/user/repo                       (git clone & release/archive only)
+//
+// The short form replaces "github.com" with the proxy domain, so the path
+// carries no explicit host. It is restricted to git clone (info/git- endpoints)
+// and release/archive downloads; accessing any web resource is rejected.
+func resolveTarget(rawPath, rawQuery string) (string, bool) {
+	if len(rawPath) < 2 {
+		return "", false
 	}
 
 	// Remove leading "/"
 	u := rawPath[1:]
 
-	// Add protocol if missing
-	if !strings.HasPrefix(u, "http") {
-		u = "https://" + u
-	}
-	// Fix double-slash stripping by reverse proxies (e.g. nginx / uwsgi)
-	if !strings.Contains(u[3:9], "://") {
-		u = strings.Replace(u, "s:/", "s://", 1)
+	shortForm := !isFullGitHubURL(u)
+	if shortForm {
+		// Treat the path as relative to github.com.
+		u = "https://github.com/" + u
+	} else {
+		// Add protocol if missing
+		if !strings.HasPrefix(u, "http") {
+			u = "https://" + u
+		}
+		// Fix double-slash stripping by reverse proxies (e.g. nginx / uwsgi)
+		if !strings.Contains(u[3:9], "://") {
+			u = strings.Replace(u, "s:/", "s://", 1)
+		}
 	}
 
 	// Check URL against patterns
-	if !matchURL(u) {
-
-		c.String(http.StatusForbidden, "Invalid input.")
-		return
+	if shortForm {
+		if !exp1.MatchString(u) && !exp3.MatchString(u) {
+			return "", false
+		}
+	} else if !matchURL(u) {
+		return "", false
 	}
 
 	// blob -> raw conversion
@@ -113,12 +153,10 @@ func proxyHandler(c *gin.Context) {
 	}
 
 	// Append query string if present
-	fullURL := u
-	if c.Request.URL.RawQuery != "" {
-		fullURL = u + "?" + c.Request.URL.RawQuery
+	if rawQuery != "" {
+		u = u + "?" + rawQuery
 	}
-
-	doProxy(c, fullURL, false)
+	return u, true
 }
 
 // ======================== Core Proxy Logic ========================
@@ -205,6 +243,27 @@ func doProxy(c *gin.Context, targetURL string, allowRedirects bool) {
 }
 
 // ======================== Helpers ========================
+
+// isFullGitHubURL reports whether the given path (with the leading "/" already
+// removed) carries an explicit GitHub host, i.e. the classic full-URL proxy
+// form such as https://example.com/https://github.com/user/repo. A path without
+// a host (e.g. "user/repo") is the short form and returns false.
+func isFullGitHubURL(u string) bool {
+	// Strip a scheme prefix, including the single-slash variant produced when a
+	// reverse proxy collapses "https://" to "https:/".
+	for _, p := range []string{"https://", "http://", "https:/", "http:/"} {
+		if strings.HasPrefix(u, p) {
+			u = u[len(p):]
+			break
+		}
+	}
+	for _, h := range githubHosts {
+		if strings.HasPrefix(u, h) {
+			return true
+		}
+	}
+	return false
+}
 
 func matchURL(u string) bool {
 	for _, exp := range exps {

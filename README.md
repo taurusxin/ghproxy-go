@@ -22,6 +22,7 @@ Re-implementation of [hunshcn/gh-proxy](https://github.com/hunshcn/gh-proxy) in 
   - Blob & Raw files (automatic blob->raw conversion)
   - `git clone` support (Smart HTTP protocol)
   - `gist.github.com` support
+  - Short-form URLs for `git clone` and release/archive downloads (see below)
 
 ## Usage
 
@@ -39,6 +40,23 @@ wget https://ghproxy.com/https://github.com/taurusxin/ghproxy-go/releases/downlo
 
 # Clone Repository
 git clone https://ghproxy.com/https://github.com/taurusxin/ghproxy-go.git
+```
+
+### Short-form URLs (git clone & release download only)
+
+For `git clone` and release/archive downloads you can skip the full URL and just
+replace `github.com` with your proxy domain. Any other path is treated as a web
+resource and rejected.
+
+```bash
+# Clone Repository
+git clone https://ghproxy.com/taurusxin/ghproxy-go.git
+
+# Download Release
+wget https://ghproxy.com/taurusxin/ghproxy-go/releases/download/v1.0.0/app.zip
+
+# Download Archive
+wget https://ghproxy.com/taurusxin/ghproxy-go/archive/refs/heads/main.zip
 ```
 
 ## Deployment
