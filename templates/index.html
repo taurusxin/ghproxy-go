@@ -46,11 +46,12 @@
     .input-row {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1rem;
     }
 
     .input-row input {
       flex: 1;
+      min-width: 0;
       padding: 0.7rem 1rem;
       font-size: 0.9rem;
       font-family: inherit;
@@ -87,6 +88,29 @@
     .input-row button:hover {
       background: #333;
     }
+
+    button:disabled { opacity: 0.45; cursor: default; }
+    [hidden] { display: none !important; }
+    .hint { font-size: 0.8rem; color: #777; line-height: 1.6; margin-bottom: 1.5rem; }
+    .hint.error { color: #b42318; }
+    .result { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 1rem; margin-bottom: 2rem; }
+    .result h2 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; }
+    .result-link { display: block; font: 0.8rem/1.6 monospace; color: #444; overflow-wrap: anywhere; margin-bottom: 1rem; }
+    .command + .command { margin-top: 1rem; }
+    .command-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+    .command-header span { font-size: 0.75rem; color: #777; }
+    .copy { border: 1px solid #ddd; border-radius: 5px; background: #fff; padding: 0.25rem 0.6rem; font: inherit; font-size: 0.75rem; cursor: pointer; }
+    .copy:hover { background: #f5f5f5; }
+    .command pre { background: #f6f6f6; padding: 0.75rem; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: 0.8rem/1.7 monospace; }
+    .examples { margin-top: 0.75rem; }
+    .example-item { text-align: left; width: 100%; cursor: pointer; font-family: inherit; }
+    .example-item:hover { border-color: #bbb; }
+    .usage { margin-bottom: 2rem; font-size: 0.8rem; color: #666; line-height: 1.7; }
+    .usage h2 { font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 0.75rem; }
+    .usage ol { padding-left: 1.25rem; }
+    .usage li + li { margin-top: 0.75rem; }
+    .usage code { display: block; margin-top: 0.25rem; padding: 0.5rem 0.65rem; background: #f0f0f0; border-radius: 6px; font-size: 0.75rem; overflow-wrap: anywhere; }
+    .usage p { margin-top: 0.75rem; }
 
     .section-title {
       font-size: 0.75rem;
@@ -153,44 +177,56 @@
   <div class="container">
     <div class="header">
       <h1>GitHub Proxy</h1>
-      <p>GitHub 文件加速下载</p>
+      <p>GitHub 仓库克隆与文件加速下载</p>
     </div>
 
-    <form class="input-row" onsubmit="go(event)">
-      <input id="url" type="text" placeholder="粘贴 GitHub 文件链接" autofocus>
-      <button type="submit">下载</button>
+    <form id="proxy-form" class="input-row">
+      <input id="url" type="text" aria-label="GitHub 仓库或文件地址" aria-describedby="input-hint" placeholder="粘贴 GitHub 仓库或文件链接" autocomplete="off" spellcheck="false" autofocus>
+      <button id="submit" type="submit" disabled>生成命令</button>
     </form>
+    <p id="input-hint" class="hint" role="status">输入后自动识别仓库或文件，实时生成加速链接和命令。</p>
 
-    <div class="section-title">支持的链接格式</div>
+    <section id="result" class="result" aria-label="加速链接和命令" hidden>
+      <h2 id="result-title"></h2>
+      <a id="proxy-link" class="result-link"></a>
+      <div id="commands"></div>
+    </section>
+
+    <section class="usage" aria-label="使用说明">
+      <h2>使用说明</h2>
+      <ol>
+        <li>替换域名：将链接中的 github.com 替换为当前部署域名，即可克隆仓库或下载文件。
+          <code data-proxy-path="/user/repo.git">https://你的域名/user/repo.git</code>
+        </li>
+        <li>添加前缀：将完整的 GitHub URL 放在当前站点地址后面，同样支持克隆和下载。
+          <code data-proxy-path="/https://github.com/user/repo.git">https://你的域名/https://github.com/user/repo.git</code>
+        </li>
+      </ol>
+      <p>也可在上方粘贴链接，自动生成命令。Raw / Gist 链接请使用添加前缀的方式。</p>
+    </section>
+
+    <div class="section-title">试试这些链接</div>
     <div class="examples">
-      <div class="example-item">
-        <span class="label">Git Clone（短链接，推荐）</span>
-        <span class="url">git clone https://ghp.taurusxin.com/user/repo.git</span>
-      </div>
-      <div class="example-item">
-        <span class="label">Release 文件（短链接）</span>
-        <span class="url">https://ghp.taurusxin.com/user/repo/releases/download/v1.0/file.zip</span>
-      </div>
-      <div class="example-item">
-        <span class="label">Git Clone（完整链接）</span>
-        <span class="url">git clone https://ghp.taurusxin.com/https://github.com/user/repo.git</span>
-      </div>
-      <div class="example-item">
+      <button type="button" class="example-item" data-url="https://github.com/taurusxin/ghproxy-go">
+        <span class="label">克隆仓库</span>
+        <span class="url">https://github.com/taurusxin/ghproxy-go</span>
+      </button>
+      <button type="button" class="example-item" data-url="https://github.com/user/repo/releases/download/v1.0/file.zip">
         <span class="label">Release 文件</span>
         <span class="url">https://github.com/user/repo/releases/download/v1.0/file.zip</span>
-      </div>
-      <div class="example-item">
+      </button>
+      <button type="button" class="example-item" data-url="https://github.com/user/repo/archive/refs/heads/main.zip">
         <span class="label">分支源码</span>
-        <span class="url">https://github.com/user/repo/archive/master.zip</span>
-      </div>
-      <div class="example-item">
+        <span class="url">https://github.com/user/repo/archive/refs/heads/main.zip</span>
+      </button>
+      <button type="button" class="example-item" data-url="https://github.com/user/repo/blob/main/README.md">
         <span class="label">仓库文件</span>
-        <span class="url">https://github.com/user/repo/blob/master/README.md</span>
-      </div>
-      <div class="example-item">
+        <span class="url">https://github.com/user/repo/blob/main/README.md</span>
+      </button>
+      <button type="button" class="example-item" data-url="https://raw.githubusercontent.com/user/repo/main/file">
         <span class="label">Raw 文件</span>
-        <span class="url">https://raw.githubusercontent.com/user/repo/master/file</span>
-      </div>
+        <span class="url">https://raw.githubusercontent.com/user/repo/main/file</span>
+      </button>
     </div>
 
     <footer>
@@ -198,11 +234,148 @@
     </footer>
   </div>
   <script>
-    function go(e) {
-      e.preventDefault();
-      var v = document.getElementById("url").value.trim();
-      if (v) window.location.href = "/" + v;
+    function classifyInput(value, origin) {
+      let text = value.trim();
+      if (!text) return null;
+      text = text.replace(/^git@github\.com:/i, 'https://github.com/');
+      if (/^\/?[\w.-]+\/[\w.-]+\/?$/.test(text)) {
+        text = 'https://github.com/' + text.replace(/^\//, '');
+      } else if (!/^https?:\/\//i.test(text)) {
+        text = 'https://' + text;
+      }
+      let source;
+      try { source = new URL(text); } catch { throw new Error('请输入有效的 GitHub 仓库或文件地址。'); }
+      if (source.origin === origin) {
+        const path = source.pathname.slice(1);
+        source = /^https?:\/\//.test(path)
+          ? new URL(path + source.search)
+          : new URL('https://' + (/^(?:github\.com|raw\.(?:githubusercontent|github)\.com|gist\.(?:githubusercontent|github)\.com)\//.test(path) ? '' : 'github.com/') + path + source.search);
+      }
+      if (!['https:', 'http:'].includes(source.protocol) || source.username || source.password || source.port) {
+        throw new Error('仅支持 GitHub 的 HTTP / HTTPS 链接。');
+      }
+      const parts = source.pathname.replace(/^\//, '').split('/');
+      if (parts.at(-1) === '') parts.pop();
+      if (parts.some(part => !part)) throw new Error('链接路径不完整，请检查后重试。');
+      const github = source.hostname === 'github.com';
+      const repository = github && parts.length === 2;
+      const file = github
+        ? (parts[2] === 'releases' && parts.length >= 6 &&
+            (parts[3] === 'download' || parts[3] === 'latest' && parts[4] === 'download'))
+          || parts[2] === 'archive' && parts.length >= 4
+          || ['blob', 'raw'].includes(parts[2]) && parts.length >= 5
+        : /^raw\.(?:githubusercontent|github)\.com$/.test(source.hostname) && parts.length >= 4
+          || /^gist\.(?:githubusercontent|github)\.com$/.test(source.hostname) && parts.length >= 3;
+      if (!repository && !file) throw new Error('支持仓库、Release、Archive、Blob、Raw 和 Gist 文件链接。');
+      source.hash = '';
+      if (repository) {
+        source.search = '';
+        source.pathname = '/' + parts.join('/').replace(/(?:\.git)?$/, '.git');
+      }
+      const proxyURL = origin + (github ? source.pathname + source.search : '/' + source.href);
+      // Single quotes work in common Unix shells and PowerShell. Encode URL
+      // apostrophes so pasted input cannot terminate a quoted shell argument.
+      const quote = value => "'" + value.replace(/'/g, '%27') + "'";
+      let filename = parts.at(-1);
+      try { filename = decodeURIComponent(filename); } catch { /* Keep encoded name. */ }
+      filename = filename.replace(/[\\/:*?"<>|'\x00-\x1f]/g, '_');
+      if (!filename || /^\.+$/.test(filename)) filename = 'download';
+      const commands = repository
+        ? [['Git Clone', 'git clone ' + quote(proxyURL)]]
+        : [['wget', 'wget -O ' + quote(filename) + ' ' + quote(proxyURL)],
+           ['curl', 'curl -fL -o ' + quote(filename) + ' ' + quote(proxyURL)]];
+      return { repository, proxyURL, commands };
     }
+
+    const input = document.getElementById('url');
+    const result = document.getElementById('result');
+    const hint = document.getElementById('input-hint');
+    const submit = document.getElementById('submit');
+    const commands = document.getElementById('commands');
+    let current = null;
+
+    async function copyCommand(command, button) {
+      const originalLabel = button.textContent;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(command);
+        } else {
+          const area = document.createElement('textarea');
+          area.value = command;
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.append(area);
+          try {
+            area.select();
+            if (!document.execCommand('copy')) throw new Error('Copy failed');
+          } finally { area.remove(); }
+        }
+        button.textContent = '已复制';
+        setTimeout(() => { button.textContent = originalLabel; }, 1800);
+      } catch { button.textContent = '请手动复制'; }
+    }
+
+    function update() {
+      current = null;
+      commands.replaceChildren();
+      result.hidden = true;
+      submit.disabled = true;
+      submit.textContent = '生成命令';
+      hint.classList.remove('error');
+      try {
+        current = classifyInput(input.value, window.location.origin);
+        hint.textContent = '输入后自动识别仓库或文件，实时生成加速链接和命令。';
+        if (!current) return;
+        result.hidden = false;
+        submit.disabled = false;
+        submit.textContent = current.repository ? '复制克隆命令' : '下载文件';
+        hint.textContent = current.repository ? '已识别为仓库，复制下方命令到终端执行。' : '已识别为文件，可直接下载或复制命令到终端执行。';
+        document.getElementById('result-title').textContent = current.repository ? '仓库克隆' : '文件下载';
+        const link = document.getElementById('proxy-link');
+        link.textContent = current.proxyURL;
+        link.href = current.proxyURL;
+        current.commands.forEach(([label, command]) => {
+          const row = document.createElement('div');
+          row.className = 'command';
+          const header = document.createElement('div');
+          header.className = 'command-header';
+          const name = document.createElement('span');
+          name.textContent = label;
+          const copy = document.createElement('button');
+          copy.type = 'button';
+          copy.className = 'copy';
+          copy.textContent = '复制';
+          copy.setAttribute('aria-label', '复制 ' + label + ' 命令');
+          copy.addEventListener('click', () => copyCommand(command, copy));
+          header.append(name, copy);
+          const pre = document.createElement('pre');
+          pre.textContent = command;
+          row.append(header, pre);
+          commands.append(row);
+        });
+      } catch (error) {
+        hint.classList.add('error');
+        hint.textContent = error.message;
+      }
+    }
+    input.addEventListener('input', update);
+    document.getElementById('proxy-form').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!current) return;
+      if (current.repository) copyCommand(current.commands[0][1], submit);
+      else window.location.assign(current.proxyURL);
+    });
+    document.querySelectorAll('[data-url]').forEach(example => {
+      example.addEventListener('click', () => {
+        input.value = example.dataset.url;
+        update();
+        input.focus();
+      });
+    });
+    document.querySelectorAll('[data-proxy-path]').forEach(example => {
+      example.textContent = window.location.origin + example.dataset.proxyPath;
+    });
+    update();
   </script>
 </body>
 </html>
